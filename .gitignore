@@ -1,4 +1,4 @@
 /node_modules/
 
-src/services/firebaseConfig.js
+src/services/firebase_settings.js
 src/services/cloudinaryConfig.js
