@@ -5,27 +5,54 @@ import { FiPlusCircle } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import './new.css';
 import firebase from '../../services/firebaseConnection';
+import axios from "axios";
+import {baseUrl} from "../../config/config";
+
+export const STATUS = {
+    EM_ABERTO: 'EM_ABERTO',
+    EM_PROGRESSO: 'EM_PROGRESSO',
+    ATENDIDO: 'ATENDIDO',
+};
+
+const ASSUNTO = {
+    SUPORTE: 'SUPORTE',
+    FINANCEIRO: 'FINANCEIRO',
+    VISITA: 'VISITA',
+}
 
 export default function New() {
 
     const [clientes, setClientes] = useState([]);
     const [loadingClientes, setLoadingClientes] = useState(true);
     const [clienteSelecionado, setClienteSelecionado] = useState(0);
-    const [assunto, setAssunto] = useState('Suporte');
-    const [status, setStatus] = useState('Aberto');
+    const [assunto, setAssunto] = useState(ASSUNTO.SUPORTE);
+    const [status, setStatus] = useState(STATUS.EM_ABERTO);
     const [complemento, setComplemento] = useState('');
 
 
     useEffect(() => {
-        async function loadClientes() {
-          
-        }
-        loadClientes();
+        axios.get(`${baseUrl}/clientes`)
+            .then(response => {
+                if(response.status === 200) {
+                    setClientes(response.data)
+                    setLoadingClientes(false)
+                }
+            })
+
     }, []);
 
-    async function handleChamado(e) {
+    async function criarChamado(e) {
         e.preventDefault();
-       
+        const chamadoData = {
+            clienteCnpj: clientes[clienteSelecionado].cnpj,
+            assunto,
+            status : STATUS.EM_ABERTO,
+            complemento,
+            dataDeCadastro: new Date().toISOString().split('T')[0], //ex: 2022-06-18
+        }
+        await axios.post(baseUrl + '/solicitacoes/', chamadoData)
+            .then(response => alert('Chamado criado com sucesso!'))
+            .catch(error => alert('Erro ao criar chamado: ' + error.message))
     }
 
     return (
@@ -39,23 +66,27 @@ export default function New() {
 
                 <div className="container">
 
-                    <form onSubmit={(e) => { handleChamado(e) }} className="form-profile">
+                    <form onSubmit={(e) =>  criarChamado(e)} className="form-profile">
                         <label>Cliente</label>
-                        {loadingClientes ?
-                            <input type="text" value="Carregando..." />
-                            : <select value={clienteSelecionado} onChange={(e) => setClienteSelecionado(e.target.value)}>
+                        {clientes ?
+                            <select value={clienteSelecionado} onChange={(e) => {
+                                setClienteSelecionado(e.target.value)
+                            }}>
                                 {clientes.map((item, index) => {
-                                    return (<option key={item.id} value={index}>{item.nome}</option>);
+                                    return (<option key={item.cnpj} value={index}>{item.nome}</option>);
                                 })}
                             </select>
+                            :
+                            <input type="text" value="Carregando..." />
                         }
 
-
                         <label>Assunto</label>
-                        <select value={assunto} onChange={(e) => setAssunto(e.target.value)}>
-                            <option value="Suporte">Suporte</option>
-                            <option value="Financeiro">Financeiro</option>
-                            <option value="Visita">Visita</option>
+                        <select value={assunto} onChange={(e) => {
+                            setAssunto(e.target.value)
+                        }}>
+                            <option value={ASSUNTO.SUPORTE}>Suporte</option>
+                            <option value={ASSUNTO.FINANCEIRO}>Financeiro</option>
+                            <option value={ASSUNTO.VISITA}>Visita</option>
                         </select>
 
                         <label>Status</label>
@@ -63,32 +94,40 @@ export default function New() {
                             <input
                                 type="radio"
                                 name="radio"
-                                value="Aberto"
-                                onChange={(e) => setStatus(e.target.value)}
-                                checked={status === "Aberto"} />
+                                value={STATUS.EM_ABERTO}
+                                onChange={(e) => {
+                                    setStatus(e.target.value)
+                                }}
+                                checked={status === STATUS.EM_ABERTO} />
                             <span>Em Aberto</span>
 
                             <input
                                 type="radio"
                                 name="radio"
-                                value="Progresso"
-                                onChange={(e) => setStatus(e.target.value)}
-                                checked={status === "Progresso"} />
+                                value={STATUS.EM_PROGRESSO}
+                                onChange={(e) => {
+                                    setStatus(e.target.value)
+                                }}
+                                checked={status === STATUS.EM_PROGRESSO} />
                             <span>Em Progresso</span>
 
                             <input
                                 type="radio"
                                 name="radio"
-                                value="Atendido"
-                                onChange={(e) => setStatus(e.target.value)}
-                                checked={status === "Atendido"} />
+                                value={STATUS.ATENDIDO}
+                                onChange={(e) => {
+                                    setStatus(e.target.value)
+                                }}
+                                checked={status === STATUS.ATENDIDO} />
                             <span>Atendido</span>
                         </div>
                         <label>Complemento</label>
                         <textarea type="text"
                             placeholder="Descreva seu problema aqui"
                             value={complemento}
-                            onChange={(e) => setComplemento(e.target.value)} />
+                            onChange={(e) => {
+                                setComplemento(e.target.value)
+                            }} />
 
                         <button type="submit">Registrar</button>
                     </form>

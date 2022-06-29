@@ -1,43 +1,41 @@
 import { useState, createContext, useEffect } from 'react'
+import auth from "../services/firebaseConnection";
 import {createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged} from "firebase/auth";
-import _auth from '../services/firebaseConnection'
-import { urlBase } from '../config/api_configs';
-import axios from 'axios';
+import axios from "axios";
+import {baseUrl} from "../config/config";
 
 export const AuthContext = createContext({});
 
 function AuthProvider({ children }) {
-    const [user, setUser] = useState(null);
-    //const [loading, setLoading] = useState(false);
+    const [user, setUser] = useState();
 
     useEffect(() => {
-            const storagedUser = onAuthStateChanged(_auth, (currentUser) =>{
-                setUser(currentUser);
-            });
-        return () => storagedUser();
+        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+            setUser(currentUser);
+        });
+        return () => unsubscribe();
     }, []);
 
     async function signUp(email, password) {
-        //Criar usario no Firebase baseado no email e senha e Salvador em um banco mysql
-        await createUserWithEmailAndPassword(_auth, email, password)
-        await axios.post(urlBase + '/user', {email});
+        await createUserWithEmailAndPassword(auth, email, password)
+        //await axios.post(baseUrl + '/user', {email});
     }
 
-    async function signIn(email, password) {
-        await signInWithEmailAndPassword(_auth, email, password);  
+    async function logIn(email, password) {
+        await signInWithEmailAndPassword(auth, email, password);
     }
 
-    async function logout() {
-        return await signOut(_auth);
+    async function logOut() {
+        await signOut(auth);
     }
 
     return (
         <AuthContext.Provider value={{
             user,
-            signUp,
-            logout,
-            signIn,
             setUser,
+            signUp,
+            logIn,
+            logOut,
         }}>
             {children}
         </AuthContext.Provider>

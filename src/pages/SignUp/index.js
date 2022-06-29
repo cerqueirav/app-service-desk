@@ -1,17 +1,33 @@
 import logo from '../../assets/login.png'
-import { Link } from 'react-router-dom'
+import {Link} from 'react-router-dom'
 import { useState, useContext } from 'react';
 import {AuthContext} from '../../contexts/auth';
+import {useNavigate} from "react-router-dom";
+
+// import auth from "../../services/firebaseConnection";
+// import {createUserWithEmailAndPassword} from "firebase/auth";
+// import axios from "axios";
+// import {baseUrl} from "../../contexts/config";
+
 function SignUp() {
+    const {signUp} = useContext(AuthContext);
+
+    const navigateTo = useNavigate();
+
     const [nome, setNome]=useState('');
     const [email, setEmail]=useState('');
     const [senha, setSenha]=useState('');
-    //const {signUp, loading}=useContext(AuthContext);
-    
-    function handleSubmit(e){
+
+    async function handleSubmit(e){
       e.preventDefault();
-     // if(email!==''&&senha!==''&&nome!=='')
-      //  signUp(email, senha, nome);
+     if(email!==''&&senha!==''&&nome!==''){
+         await signUp(email, senha)
+             .then(() => navigateTo("/dashboard"))
+             .catch(error => alert(error.message));
+     }
+     else{
+         alert("Preencha todos os campos");
+     }
     }
 
     return (
@@ -36,7 +52,5 @@ function SignUp() {
       </div>
     );
   }
-  
-
   
   export default SignUp;

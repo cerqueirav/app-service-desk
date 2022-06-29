@@ -1,17 +1,22 @@
 import './signin.css'
 import logo from '../../assets/login.png'
-import { Link, useNavigate } from 'react-router-dom'
+import {Link, useNavigate} from 'react-router-dom'
 import { useState,useContext } from 'react';
+import {AuthContext} from "../../contexts/auth";
 
 function SignIn() {
+    const {logIn} = useContext(AuthContext);
+    const navigateTo = useNavigate();
+
     const [email, setEmail]=useState('');
     const [senha, setSenha]=useState('');
-    const history=useNavigate();
-    
+
     function handleSubmit(e){
       e.preventDefault();
-     
-      history("/dashboard")
+          logIn(email, senha)
+              .then(() => navigateTo("/dashboard"))
+              .catch(error => alert(error.message));
+
     }
 
     return (

@@ -1,14 +1,42 @@
-
 import './dashboard.css';
-import { useState } from 'react';
+import {useEffect, useState} from 'react';
 import Header from '../../components/Header';
 import Title from '../../components/Title';
 import { FiMessageSquare, FiPlus, FiSearch, FiEdit2 } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
+import axios from "axios";
+import {baseUrl} from "../../config/config";
+import {Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, RadioGroup, Radio} from '@mui/material'
+import {STATUS} from "../New";
 
 export default function Dashboard(){
-  const [chamados, setChamados] = useState([1]);
-  return(
+  const [solicitacaos, setsolicitacaos] = useState([]);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isComplementoAberto, setIsComplementoAberto] = useState(false);
+  const [novoStatus, setNovoStatus] = useState(null);
+  const [solicitacaoASerAtualizado, setsolicitacaoASerAtualizado] = useState(null);
+  const [solicitacaoSelecionado, setsolicitacaoSelecionado] = useState(null);
+
+    useEffect(() => {
+        axios.get(baseUrl + '/solicitacoes')
+        .then(response => {
+            if(response.status === 200) setsolicitacaos(response.data);
+            else console.log('Erro ao carregar os solicitacaos');
+        })
+    }, []);
+
+    function atualizarStatus() {
+        solicitacaoASerAtualizado.status = novoStatus;
+        console.log(solicitacaoASerAtualizado);
+        axios.patch(baseUrl + '/solicitacoes/', solicitacaoASerAtualizado)
+            .catch(error => alert(error.message));
+    }
+
+    function closeComplemento(event, reason) {
+        if (reason ==="backdropClick") setIsComplementoAberto(false);
+    }
+
+    return(
     <div>
       <Header/>
 
@@ -17,20 +45,20 @@ export default function Dashboard(){
           <FiMessageSquare size={25} />
         </Title>
 
-        {chamados.length === 0 ? (
+        {solicitacaos.length === 0 ? (
           <div className="container dashboard">
-            <span>Nenhum chamado registrado...</span>
+            <span>Nenhum solicitacao registrado...</span>
 
             <Link to="/new" className="new">
               <FiPlus size={25} color="#FFF" />
-              Novo chamado
+              Novo solicitacao
             </Link>
           </div>
         )  : (
           <>
             <Link to="/new" className="new">
               <FiPlus size={25} color="#FFF" />
-              Novo chamado
+              Novo solicitacao
             </Link>
 
             <table>
@@ -44,22 +72,68 @@ export default function Dashboard(){
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td data-label="Cliente">Sujeito</td>
-                  <td data-label="Assunto">Suporte</td>
-                  <td data-label="Status">
-                    <span className="badge" style={{backgroundColor: '#5cb85c' }}>Em aberto</span>
-                  </td>
-                  <td data-label="Cadastrado">20/06/2021</td>
-                  <td data-label="#">
-                    <button className="action" style={{backgroundColor: '#3583f6' }}>
-                      <FiSearch color="#FFF" size={17} />
-                    </button>
-                    <button className="action" style={{backgroundColor: '#F6a935' }}>
-                      <FiEdit2 color="#FFF" size={17} />
-                    </button>
-                  </td>
-                </tr>
+              {solicitacaos.map((solicitacao) => {
+                  return (
+                      <tr key={solicitacao.id}>
+                          <td data-label="Cliente">{ solicitacao.cliente.nome }</td>
+                          <td data-label="Assunto">{ solicitacao.assunto }</td>
+                          <td data-label="Status">
+                        <span
+                            className="badge"
+                            style={
+                                solicitacao.status === 'EM_ABERTO' ?
+                                    { backgroundColor: '#bf2d17' } :
+                                    solicitacao.status === 'EM_PROGRESSO' ?
+                                        { backgroundColor: '#c2b43c' } :
+                                        { backgroundColor: '#5cb85c'}
+                            }
+                        >
+                          { solicitacao.status }
+                        </span>
+                          </td>
+                          <td data-label="Cadastrado">{ solicitacao.dataCriacao }</td>
+                          <td data-label="#">
+                              {solicitacaoSelecionado ?
+                                  <Dialog open={isComplementoAberto} onClose={closeComplemento}>
+                                  <DialogTitle>Complemento:</DialogTitle>
+                                  <DialogContent>
+                                  <DialogContentText>{solicitacaoSelecionado.complemento || "sem complemento específico"}</DialogContentText>
+                                  </DialogContent>
+                                  </Dialog>: null
+                              }
+
+                              <button onClick={()=> {
+                                  setsolicitacaoSelecionado(solicitacao);
+                                  setIsComplementoAberto(true)
+                              }} className="action" style={{backgroundColor: '#3583f6' }}>
+                                  <FiSearch color="#FFF" size={17} />
+                              </button>
+                              <button onClick={()=> {
+                                  setsolicitacaoASerAtualizado(solicitacao)
+                                  setIsDialogOpen(true)
+                              }} className="action" style={{backgroundColor: '#F6a935' }}>
+                                  <FiEdit2 color="#FFF" size={17} />
+                              </button>
+                              <Dialog open={isDialogOpen}>
+                                  <DialogTitle>Qual o novo status?</DialogTitle>
+                                  <DialogContent>
+                                      <RadioGroup defaultValue={solicitacao.status} row name="status" onChange={(e) => setNovoStatus(e.target.value)}>
+                                          <div><Radio value={STATUS.EM_ABERTO} /> Em Aberto</div>
+                                          <div><Radio value={STATUS.EM_PROGRESSO} /> Em Progresso</div>
+                                          <div><Radio value={STATUS.ATENDIDO} /> Atendido</div>
+                                      </RadioGroup>
+                                      <DialogActions>
+                                          <button onClick={()=> {
+                                              setIsDialogOpen(false)
+                                              atualizarStatus();
+                                          }}>Confirmar</button>
+                                      </DialogActions>
+                                  </DialogContent>
+                              </Dialog>
+                          </td>
+                      </tr>
+                  )
+              })}
               </tbody>
             </table>
           </>

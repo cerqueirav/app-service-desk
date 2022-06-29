@@ -1,4 +1,3 @@
-
 import './title.css'
 
 function Title({children, nome}) {
